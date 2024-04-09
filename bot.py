@@ -1,4 +1,5 @@
 import asyncio
+import httpx
 import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
@@ -18,6 +19,7 @@ from heroes_index import (
     Agility_Ranged,
     Universal_Ranged,
     Strength_Ranged,
+    heroes_by_id
 )
 
 config = dotenv_values(".env")
@@ -153,7 +155,7 @@ async def primary_type_choice(
             for i in Agility_Melee:
                 builder.add(
                     types.InlineKeyboardButton(
-                        text=i["name"],
+                        text=i["name"][14:],
                         callback_data=HeroChoice(
                             attack_type="Melee", primary_attr="Agility", id=i["id"]
                         ).pack(),
@@ -163,7 +165,7 @@ async def primary_type_choice(
             for i in Strength_Melee:
                 builder.add(
                     types.InlineKeyboardButton(
-                        text=i["name"],
+                        text=i["name"][14:],
                         callback_data=HeroChoice(
                             attack_type="Melee", primary_attr="Strength", id=i["id"]
                         ).pack(),
@@ -173,7 +175,7 @@ async def primary_type_choice(
             for i in Universal_Melee:
                 builder.add(
                     types.InlineKeyboardButton(
-                        text=i["name"],
+                        text=i["name"][14:],
                         callback_data=HeroChoice(
                             attack_type="Melee", primary_attr="Universal", id=i["id"]
                         ).pack(),
@@ -184,7 +186,7 @@ async def primary_type_choice(
             for i in Agility_Melee:
                 builder.add(
                     types.InlineKeyboardButton(
-                        text=i["name"],
+                        text=i["name"][14:],
                         callback_data=HeroChoice(
                             attack_type="Ranged", primary_attr="Agility", id=i["id"]
                         ).pack(),
@@ -194,7 +196,7 @@ async def primary_type_choice(
             for i in Strength_Melee:
                 builder.add(
                     types.InlineKeyboardButton(
-                        text=i["name"],
+                        text=i["name"][14:],
                         callback_data=HeroChoice(
                             attack_type="Ranged", primary_attr="Strength", id=i["id"]
                         ).pack(),
@@ -204,7 +206,7 @@ async def primary_type_choice(
             for i in Universal_Melee:
                 builder.add(
                     types.InlineKeyboardButton(
-                        text=i["name"],
+                        text=i["name"][14:],
                         callback_data=HeroChoice(
                             attack_type="Ranged", primary_attr="Universal", id=i["id"]
                         ).pack(),
@@ -214,7 +216,7 @@ async def primary_type_choice(
             for i in Universal_Melee:
                 builder.add(
                     types.InlineKeyboardButton(
-                        text=i["name"],
+                        text=i["name"][14:],
                         callback_data=HeroChoice(
                             attack_type="Ranged", primary_attr="Intellect", id=i["id"]
                         ).pack(),
@@ -228,6 +230,22 @@ async def primary_type_choice(
     )
     await callback.answer()
 
+@dp.callback_query(HeroChoice.filter())
+async def primary_line_choice(callback: types.CallbackQuery, callback_data: PrimaryAttrChoice):
+    roles = heroes_by_id[callback_data.id]["roles"]
+    name = heroes_by_id[callback_data.id]["name"][14:]
+    lanes = httpx.get(f"https://api.opendota.com/api/scenarios/laneRoles?hero_id={callback_data.id}").json()
+    first_lane = lanes[0]
+    for i in lanes:
+        if int(first_lane["games"]) < int(i["games"]):
+            first_lane = i
+    lane_decode = {1:"easy", 2:"mid", 3:'hard', 4:"jungle"}
+    lane = lane_decode[first_lane["lane_role"]]
+
+    await callback.message.answer(
+        f"Приоритетные линия и роли для {name}: {lane}; {', '.join(roles)}",
+    )
+    await callback.answer()
 
 async def main():
     await dp.start_polling(bot)
@@ -235,3 +253,10 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+lanes = httpx.get(f"https://api.opendota.com/api/scenarios/laneRoles?hero_id={callback_data.id}").json()
+first_lane = lanes[0]
+for i in lanes:
+    if int(first_lane["games"]) < int(i["games"]):
+        first_lane = i
+

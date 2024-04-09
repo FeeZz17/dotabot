@@ -1,6 +1,10 @@
 import httpx
 r = httpx.get("https://api.opendota.com/api/heroes")
 
+
+heroes_by_id = {i['id']:i for i in r.json() }
+
+
 Ranged = []
 Melee = []
 
